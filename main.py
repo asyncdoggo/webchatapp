@@ -1,6 +1,5 @@
 import datetime
 import json
-from pyexpat.errors import messages
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from urllib import response
@@ -16,7 +15,7 @@ app = flask.Flask(__name__)
 CORS(app)
 
 users = []
-messages = {}
+messages = {0: ""}
 mid = 0
 
 
@@ -42,7 +41,7 @@ def index():
             return " "
 
         elif data["subject"] == "getmsg":
-            msg = {"message":messages[mid],"mid":mid}
+            msg = {"message": messages[mid], "mid": mid}
             return json.dumps(msg)
 
         else:
@@ -53,10 +52,11 @@ def index():
 def chat(uname):
     print(uname)
     if uname in users:
-        return render_template("index.html",error="Username is taken")
+        return render_template("index.html", error="Username is taken")
     else:
         users.append(uname)
-        return render_template("chat.html",uname=uname)
+        return render_template("chat.html", uname=uname)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5005, debug=True, threaded=True)
