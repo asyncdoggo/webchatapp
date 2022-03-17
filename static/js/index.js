@@ -1,17 +1,9 @@
 $(document).ready(function(){
-    $("#button1").click(function() {
-        var uname = $("#username").val()
+    $("#register").click(function(){
+        window.location.href = "/register"
+    })
 
-        var unamedata = {
-            "subject":"login",
-            "username":uname
-        }
-
-        $.post("/",{
-            all_data:JSON.stringify(unamedata)
-        },function(err,req,resp){
-            console.log(resp);
-            window.location.href = "/"+resp["responseText"];
-        })
+    $("#loginbutton").click(function(){
+        window.location.href = "/login"
     })
 })

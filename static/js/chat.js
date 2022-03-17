@@ -22,6 +22,12 @@ $(document).ready(function() {
         })
     })
 
+
+    $("#logout").click(function(){
+        send_form("/logout","uname",username);
+    })
+
+
     getloop();
 })
 
@@ -47,3 +53,17 @@ var mid1 = 0;
         })
     }
     }
+
+    function send_form(action,p1,p2){
+        var form = document.createElement('form');
+            form.setAttribute('method', 'post');
+            form.setAttribute('action', action);
+
+            var hiddenField = document.createElement('input');
+            hiddenField.setAttribute('type', 'hidden');
+            hiddenField.setAttribute('name', p1);
+            hiddenField.setAttribute('value', p2);
+            form.appendChild(hiddenField);
+            document.body.appendChild(form);
+            form.submit();
+}

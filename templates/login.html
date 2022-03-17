@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>webchat</title>
+  </head>
+    <body>
+      <h1>{{error}}</h1> 
+      <div class="container">
+		<form id="login_form">
+            <label for="uname">username:</label><br>
+            <input type="text" id="uname" name="uname"><br>
+            <label for="lname">password:</label><br>
+            <input type="text" id="passwd" name="passwd"><br>
+            <input type="submit" value="login">
+          </form>
+          <p id="error"></p>
+      </div>
+	  <script src="https://code.jquery.com/jquery-3.6.0.min.js"> </script>
+      <script src="/static/js/jquery.serializejson.js"></script>
+	  <script src="/static/js/login.js"> </script>
+  </body>
+</html>
