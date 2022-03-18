@@ -8,7 +8,7 @@ $(document).ready(function(){
         all_data:JSON.stringify(data)
     },function(err,req,resp){
         if(resp["responseText"] == "success"){
-            send_form("/chat","uname",data["uname"]);
+            send_form("/interface","uname",data["uname"]);
         }
         else if(resp["responseText"] == "nouser"){
             $("#error").text("Username does not exists");

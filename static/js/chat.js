@@ -1,4 +1,3 @@
-const sleep = ms => new Promise(res => setTimeout(res, ms));
 var mid = 0;
 
 $(document).ready(function() {
@@ -54,6 +53,7 @@ var mid1 = 0;
     }
     }
 
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
     function send_form(action,p1,p2){
         var form = document.createElement('form');
             form.setAttribute('method', 'post');
