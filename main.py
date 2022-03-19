@@ -30,8 +30,6 @@ conn.close()
 def index():
     global mid,users
 
-    print(flask.request)
-
     if flask.request.method == 'GET':
         return render_template("index.html")
 
@@ -48,25 +46,22 @@ def index():
 
 
             elif data["subject"] == "sendmsg":
-                mid += 1
-                messages[mid] = data["message"]
-                return " "
+                user1 = data["fromuser"]
+                user2 = data["touser"]
+                res = send_msg(user1,user2,data["message"])
+                return res
 
             elif data["subject"] == "getmsg":
-                msg = {"message": messages[mid], "mid": mid}
-                return json.dumps(msg)
+                res = getmsg(data["fromuser"],data['touser'])
+                return res 
 
             elif data["subject"] == "register":
                 resp = registeruser(data)
                 return resp
 
             elif data["subject"] == "getusers":
-                us = users.copy()
-                for i in us:
-                    if i.getuname() == data["uname"]:
-                        us.remove(i)
-        
-                r = {i:j.getuname() for i,j in zip(range(len(us)),us)}
+                res=fetchusers()
+                r = {i:j for i,j in zip(range(len(res)),res)}
                 return r
 
             else:
@@ -86,21 +81,26 @@ def login():
 @app.route("/chat",methods=["POST"])
 def chat():
     try:
-        u = request.form['uname']
-        return render_template("chat.html",uname=u)
+        data = request.form
+        print(data)
+        if data["subject"] == "sendto":
+            user1 = data['from']
+            user2 = data['to']
+            return render_template("chat.html",uname=user1,touser=user2)
     except:
-        return "bad request"
-
+        return "bad data"
 
 @app.route("/logout",methods=["POST"])
 def logout():
     try:
         u = request.form['uname']
         for i in users:
-            if i.getuser() == u:
+            if i.getuname() == u:
                 users.remove(i)
+                break
         return render_template("index.html")
-    except:
+    except Exception as e:
+        print(repr(e))
         return "bad request"
 
 
@@ -163,8 +163,71 @@ def loginuser(data):
             id = records[0][0]
             conn.close()
             users.append(Users(username,id))
-            print(users)
             return "success"
+
+def send_msg(user1,user2,msg):
+    usr = fetchusers()
+    if user1 in usr and user2 in usr:
+        try:
+            user1,user2 = sortedstring(user1,user2)
+            conn = sqlite3.connect(database="chat.db")
+            cur = conn.cursor()
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1+user2} (id INTEGER PRIMARY KEY,message TEXT)")
+            conn.commit()
+            cur.execute(f"INSERT INTO {user1+user2} (message) VALUES (?)",(msg,))
+            conn.commit()
+            conn.close()
+            return "success"
+        except:
+            pass
+    else:
+        return "bad username"
+
+def getmsg(user1,user2):
+    usr = fetchusers()
+    if user1 in usr and user2 in usr:
+        try:
+            user1,user2 = sortedstring(user1,user2)
+            conn = sqlite3.connect(database="chat.db")
+            cur = conn.cursor()
+            cur.execute(f"SELECT message FROM {user1+user2}")
+            res = cur.fetchall()
+            conn.close()
+            res = [res[i][0] for i in range(len(res))]
+            r = {i:j for i,j in zip(range(len(res)),res)}
+            return r
+
+        except Exception as e:
+            print(repr(e))
+            return "error"
+    else:
+        return "bad username"
+
+
+
+def sortedstring(a,b):
+    f = 0
+    for i,j in zip(a,b):
+        if i>j:
+            f = 1
+            break
+        elif i<j:
+            f = 0
+            break
+
+    if f:
+        return a,b
+    else:
+        return b,a
+
+def fetchusers():
+    conn = sqlite3.connect(database="chat.db")
+    cur = conn.cursor()
+    cur.execute("SELECT username FROM users")
+    res = cur.fetchall()
+    conn.close()
+    res = [res[i][0] for i in range(len(res))]
+    return res
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5005, debug=True)

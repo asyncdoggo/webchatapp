@@ -1,9 +1,21 @@
 var mid = 0;
+var username = ""
+var touser = ""
+var getdata = {}
+
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 $(document).ready(function() {
     var textarea = $("#textarea1");
     textarea.attr("readonly",true);
-    var username = $("#username").text();
+    username = $("#uname").text();
+    touser = $("#touser").text();
+    getdata = {"subject":"getmsg",
+            "touser":touser,
+            "fromuser":username
+                }
+
+
     console.log(username);
 
     $("#submit").click(function(){
@@ -13,11 +25,15 @@ $(document).ready(function() {
 
         msgdata = {"subject":"sendmsg",
                     "message": message,
+                    "touser":touser,
+                    "fromuser":username
                 }
 
         $.post("/",{
             all_data:JSON.stringify(msgdata)
         },function(err,req,resp){
+            var res = resp["responseText"];
+            console.log(res);
         })
     })
 
@@ -30,30 +46,40 @@ $(document).ready(function() {
     getloop();
 })
 
+
+var getdata = {"subject":"getmsg",
+            "touser":touser,
+            "fromuser":username
+                }
+
 var msg  = "";
-var mid1 = 0;
-    async function getloop(){
+
+var count = 0
+var prev = count;
+async function getloop(){
+        var textarea = $("#textarea1");
         while(true){
-        await sleep(1000);
+        await sleep(5000);
+
         $.post("/",{
-            all_data:"{\"subject\":\"getmsg\"}"
+            all_data:JSON.stringify(getdata)
         },function(err,req,resp){
-            msg = JSON.parse(resp["responseText"]);
-
             console.log(resp["responseText"])
+            msg = JSON.parse(resp["responseText"]);
+            count = Object.keys(msg).length;
 
-            mes = msg["message"];
-            mid = msg["mid"];
-
-            if(mid != mid1){
-                textarea1.append(mes);
-                mid1=mid;
-            }
+            if (count > prev){
+            textarea.val("");
+            for (m in Object.keys(msg)){
+            textarea.val(textarea.val() + msg[m]);
+            prev = count;
+        }
+        }
         })
     }
     }
 
-    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    
     function send_form(action,p1,p2){
         var form = document.createElement('form');
             form.setAttribute('method', 'post');
