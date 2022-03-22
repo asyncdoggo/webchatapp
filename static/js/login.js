@@ -7,30 +7,41 @@ $(document).ready(function(){
     $.post("/",{
         all_data:JSON.stringify(data)
     },function(err,req,resp){
-        if(resp["responseText"] == "success"){
-            send_form("/interface","uname",data["uname"]);
+
+        msg = JSON.parse(resp["responseText"]);
+
+        if(msg["status"] == "success"){
+            document.cookie = `${msg["key"]};path=/interface`;
+            send_form("/interface",{"uname":data["uname"],"key":msg["key"]});
         }
-        else if(resp["responseText"] == "nouser"){
+        else if(msg["status"] == "nouser"){
             $("#error").text("Username does not exists");
         }
-        else if(resp["responseText"] == "badpasswd"){
+        else if(msg["status"] == "badpasswd"){
             $("#error").text("password is wrong");
         }
 });
 })
 })
 
-function send_form(action,p1,p2){
+function send_form(action,params){
         var form = document.createElement('form');
             form.setAttribute('method', 'post');
             form.setAttribute('action', action);
 
-            var hiddenField = document.createElement('input');
-            hiddenField.setAttribute('type', 'hidden');
-            hiddenField.setAttribute('name', p1);
-            hiddenField.setAttribute('value', p2);
-            form.appendChild(hiddenField);
+            for(var key in params) {
+                if(params.hasOwnProperty(key)) {
+                    var hiddenField = document.createElement("input");
+                    hiddenField.setAttribute("type", "hidden");
+                    hiddenField.setAttribute("name", key);
+                    hiddenField.setAttribute("value", params[key]);
+        
+                    form.appendChild(hiddenField);
+                 }
+            }
+        
             document.body.appendChild(form);
             form.submit();
 }
+
 

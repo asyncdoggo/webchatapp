@@ -2,18 +2,18 @@ var mid = 0;
 var username = ""
 var touser = ""
 var getdata = {}
+var key = ""
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 $(document).ready(function() {
+    key = document.cookie
+    document.cookie = `${key};expires=Thu, 18 Dec 1990 12:00:00 UTC;path=/chat`;
     var textarea = $("#textarea1");
     textarea.attr("readonly",true);
     username = $("#uname").text();
     touser = $("#touser").text();
-    getdata = {"subject":"getmsg",
-            "touser":touser,
-            "fromuser":username
-                }
+    getdata = {"subject":"getmsg","touser":touser,"fromuser":username,"key":key}
 
 
     console.log(username);
@@ -26,7 +26,8 @@ $(document).ready(function() {
         msgdata = {"subject":"sendmsg",
                     "message": message,
                     "touser":touser,
-                    "fromuser":username
+                    "fromuser":username,
+                    "key":key
                 }
 
         $.post("/",{
@@ -39,7 +40,7 @@ $(document).ready(function() {
 
 
     $("#logout").click(function(){
-        send_form("/logout","uname",username);
+        send_form("/logout",{"uname":username,"key":key});
     })
 
 
@@ -80,16 +81,22 @@ async function getloop(){
     }
 
     
-    function send_form(action,p1,p2){
+    function send_form(action,params){
         var form = document.createElement('form');
             form.setAttribute('method', 'post');
             form.setAttribute('action', action);
 
-            var hiddenField = document.createElement('input');
-            hiddenField.setAttribute('type', 'hidden');
-            hiddenField.setAttribute('name', p1);
-            hiddenField.setAttribute('value', p2);
-            form.appendChild(hiddenField);
+            for(var key in params) {
+                if(params.hasOwnProperty(key)) {
+                    var hiddenField = document.createElement("input");
+                    hiddenField.setAttribute("type", "hidden");
+                    hiddenField.setAttribute("name", key);
+                    hiddenField.setAttribute("value", params[key]);
+        
+                    form.appendChild(hiddenField);
+                 }
+            }
+        
             document.body.appendChild(form);
             form.submit();
 }

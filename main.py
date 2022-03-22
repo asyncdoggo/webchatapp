@@ -14,7 +14,7 @@ from User import Users
 app = flask.Flask(__name__)
 CORS(app)
 
-users = []
+users = {}
 messages = {0: ""}
 mid = 0
 
@@ -35,8 +35,8 @@ def index():
 
     if flask.request.method == 'POST':
         try:
+            print(request.form)
             data = request.form['all_data']
-            print(data)
             data = json.loads(data)
             
             
@@ -46,27 +46,42 @@ def index():
 
 
             elif data["subject"] == "sendmsg":
-                user1 = data["fromuser"]
-                user2 = data["touser"]
-                res = send_msg(user1,user2,data["message"])
-                return res
+                u = data["fromuser"] 
+                if users[u].getkey() == data["key"]:
+                    user1 = data["fromuser"]
+                    user2 = data["touser"]
+                    res = send_msg(user1,user2,data["message"])
+                    return res
+                else:
+                    return "bad key"
 
             elif data["subject"] == "getmsg":
-                res = getmsg(data["fromuser"],data['touser'])
-                return res 
+                u = data["fromuser"] 
+                if users[u].getkey() == data["key"]:
+                    res = getmsg(data["fromuser"],data['touser'])
+                    return res 
+                else:
+                    return "bad key"
 
             elif data["subject"] == "register":
                 resp = registeruser(data)
                 return resp
 
             elif data["subject"] == "getusers":
-                res=fetchusers()
-                r = {i:j for i,j in zip(range(len(res)),res)}
-                return r
+                u = data["uname"]
+                if users[u].getkey() == str(data['key']):
+                    res=fetchusers()
+                    r = {i:j for i,j in zip(range(len(res)),res)}
+                    return r
+                else:
+                    return "wrong key"
+
+                
 
             else:
                 return "error"
-        except:
+        except Exception as e:
+            print(repr(e))
             return "bad request"
 
 @app.route("/register")
@@ -82,23 +97,25 @@ def login():
 def chat():
     try:
         data = request.form
-        print(data)
-        if data["subject"] == "sendto":
+        u = data["from"]
+        if users[u].getkey() == str(data["key"]) and data["subject"] == "sendto":
             user1 = data['from']
             user2 = data['to']
             return render_template("chat.html",uname=user1,touser=user2)
-    except:
+        else:
+            return "bad data"
+    except Exception as e:
+        print(repr(e))
         return "bad data"
 
 @app.route("/logout",methods=["POST"])
 def logout():
     try:
         u = request.form['uname']
-        for i in users:
-            if i.getuname() == u:
-                users.remove(i)
-                break
-        return render_template("index.html")
+        if users[u].getkey() == request.form["key"]:
+            un = users.pop(u)
+            del un
+            return render_template("index.html")
     except Exception as e:
         print(repr(e))
         return "bad request"
@@ -108,8 +125,14 @@ def logout():
 def interface():
     try:
         u = request.form['uname']
-        return render_template("interface.html",uname=u)
-    except:
+        k = request.form["key"]
+
+        if k == users[u].getkey():
+            return render_template("interface.html",uname=u)
+        else:
+            return "bad key"
+    except Exception as e:
+        print(repr(e))
         return "bad request"
 
 def registeruser(data):
@@ -150,20 +173,30 @@ def loginuser(data):
 
     if len(records) == 0:
         conn.close()
-        return "nouser"
+        return {"status":"nouser"}
+
         
     else:
         cur.execute("SELECT uuid FROM users WHERE username =? AND password=?",(username,hashlib.md5(password.encode()).hexdigest()))
         records = cur.fetchall()
         if(len(records) == 0):
             conn.close()
-            return "badpasswd"
+            return {"status":"badpasswd"}
 
         else:
             id = records[0][0]
             conn.close()
-            users.append(Users(username,id))
-            return "success"
+            ret = ""
+            try:
+                ret = users[username].getkey()
+            
+            except:
+                e = Users(username,id)
+                ret = e.getkey()
+                users[username] = e
+                
+            print(ret)
+            return {"status":"success","key":ret}
 
 def send_msg(user1,user2,msg):
     usr = fetchusers()
