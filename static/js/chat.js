@@ -60,7 +60,7 @@ var prev = count;
 async function getloop(){
         var textarea = $("#textarea1");
         while(true){
-        await sleep(5000);
+        await sleep(1000);
 
         $.post("/",{
             all_data:JSON.stringify(getdata)

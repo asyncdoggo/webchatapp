@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import flask
 import hashlib
-
+import concurrent.futures
 from flask import render_template, request
 from flask_cors import CORS
 
@@ -21,7 +21,7 @@ mid = 0
 
 conn = sqlite3.connect(database="chat.db")
 cur = conn.cursor()
-cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT NOT NULL, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
+cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
 conn.commit()
 conn.close()
 
@@ -57,10 +57,12 @@ def index():
 
             elif data["subject"] == "getmsg":
                 u = data["fromuser"] 
-                if users[u].getkey() == data["key"]:
-                    res = getmsg(data["fromuser"],data['touser'])
-                    return res 
-                else:
+                try:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(getmsg,data["fromuser"],data['touser'],data["key"])
+                        return_value = future.result()
+                        return return_value
+                except:
                     return "bad key"
 
             elif data["subject"] == "register":
@@ -138,10 +140,9 @@ def interface():
 def registeruser(data):
     conn = sqlite3.connect(database="chat.db")
     cur = conn.cursor()
-    firstname = data["fname"]
-    lastname = data["lname"]
+    email = data["email"]
     username = data["uname"]
-    password = data["passwd"]
+    password = data["passwd1"]
 
     cur.execute("SELECT * FROM users WHERE username =?", (username,))
     records = cur.fetchall()
@@ -152,8 +153,8 @@ def registeruser(data):
             now = datetime.datetime.now()
             userid = uuid4().hex
             cur.execute(
-                "INSERT INTO users (first_name, last_name, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
-                (firstname, lastname, username, str(hashlib.md5(password.encode()).hexdigest()),userid, now))
+                "INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
+                (email, username, str(hashlib.md5(password.encode()).hexdigest()),userid, now))
             conn.commit()
             conn.close()
             return "success"
@@ -216,25 +217,26 @@ def send_msg(user1,user2,msg):
     else:
         return "bad username"
 
-def getmsg(user1,user2):
-    usr = fetchusers()
-    if user1 in usr and user2 in usr:
-        try:
-            user1,user2 = sortedstring(user1,user2)
-            conn = sqlite3.connect(database="chat.db")
-            cur = conn.cursor()
-            cur.execute(f"SELECT message FROM {user1+user2}")
-            res = cur.fetchall()
-            conn.close()
-            res = [res[i][0] for i in range(len(res))]
-            r = {i:j for i,j in zip(range(len(res)),res)}
-            return r
+def getmsg(user1,user2,key):
+    if users[user1].getkey() == key:
+        usr = fetchusers()
+        if user1 in usr and user2 in usr:
+            try:
+                user1,user2 = sortedstring(user1,user2)
+                conn = sqlite3.connect(database="chat.db")
+                cur = conn.cursor()
+                cur.execute(f"SELECT message FROM {user1+user2}")
+                res = cur.fetchall()
+                conn.close()
+                res = [res[i][0] for i in range(len(res))]
+                r = {i:j for i,j in zip(range(len(res)),res)}
+                return r
 
-        except Exception as e:
-            print(repr(e))
-            return "error"
-    else:
-        return "bad username"
+            except Exception as e:
+                print(repr(e))
+                return "error"
+        else:
+            return "bad username"
 
 
 

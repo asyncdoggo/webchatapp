@@ -5,23 +5,30 @@ $(document).ready(function(){
 
     data["subject"] = "register";
 
-    $.post("/",{
-        all_data:JSON.stringify(data)
-    },function(err,req,resp){
+    if (data["passwd1"] == data["passwd2"]){
 
-        rmsg = resp["responseText"]
-        if(rmsg == "success"){
-            $("#success").text("Rgistration successful")
-            $("#return").attr("hidden",false)    
-        }
-        if(rmsg == "already"){
-            $("#error").text("User already exists")
-        }
-        if(rmsg == "faliure"){
-            $("#error").text("An unknown error occured")
-        }
-    })
-
+        $.post("/",{
+            all_data:JSON.stringify(data)
+        },function(err,req,resp){
+    
+            rmsg = resp["responseText"]
+            if(rmsg == "success"){
+                $("#success").text("Registration successful")
+                $("#return").attr("hidden",false)    
+            }
+            if(rmsg == "already"){
+                $("#error").text("User already exists")
+            }
+            if(rmsg == "faliure"){
+                $("#error").text("An unknown error occured")
+            }
+        })
+    
+    }
+    else{
+        $("#success").text("passwords do not match");
+    }
+    
     $("#return").click(function() {
         window.location.href = "/";
     })
