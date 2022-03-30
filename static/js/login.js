@@ -2,7 +2,7 @@ $(document).ready(function(){
     $('#login_form').on('submit', function(e) {
     e.preventDefault();
     var data = $("#login_form").serializeJSON();
-    data["subject"] = "login"
+    data["subject"] = "login";
 
     $.post("/",{
         all_data:JSON.stringify(data)
@@ -11,7 +11,8 @@ $(document).ready(function(){
         msg = JSON.parse(resp["responseText"]);
 
         if(msg["status"] == "success"){
-            document.cookie = `${msg["key"]};path=/interface`;
+            localStorage.setItem("uname",data["uname"]);
+            localStorage.setItem("key",msg["key"]);
             send_form("/interface",{"uname":data["uname"],"key":msg["key"]});
         }
         else if(msg["status"] == "nouser"){

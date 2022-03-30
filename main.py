@@ -6,7 +6,7 @@ from uuid import uuid4
 import flask
 import hashlib
 import concurrent.futures
-from flask import render_template, request
+from flask import redirect, render_template, request, url_for
 from flask_cors import CORS
 
 from User import Users
@@ -117,7 +117,7 @@ def logout():
         if users[u].getkey() == request.form["key"]:
             un = users.pop(u)
             del un
-            return render_template("index.html")
+            return redirect(url_for("index"))
     except Exception as e:
         print(repr(e))
         return "bad request"
@@ -163,41 +163,53 @@ def registeruser(data):
             return "failure"
 
 def loginuser(data):
-    conn = sqlite3.connect(database="chat.db")
-    cur = conn.cursor()
-    username = data["uname"]
-    password = data["passwd"]
+    key = ""
+    try:
+        username = data["uname"]
+        password = data["passwd"]
 
-    cur.execute("SELECT username FROM users WHERE username =?",(username,))
-    records = cur.fetchall()
-    
-
-    if len(records) == 0:
-        conn.close()
-        return {"status":"nouser"}
-
-        
-    else:
-        cur.execute("SELECT uuid FROM users WHERE username =? AND password=?",(username,hashlib.md5(password.encode()).hexdigest()))
+        conn = sqlite3.connect(database="chat.db")
+        cur = conn.cursor()
+        cur.execute("SELECT username FROM users WHERE username =?",(username,))
         records = cur.fetchall()
-        if(len(records) == 0):
-            conn.close()
-            return {"status":"badpasswd"}
+        
 
-        else:
-            id = records[0][0]
+        if len(records) == 0:
             conn.close()
-            ret = ""
-            try:
-                ret = users[username].getkey()
+            return {"status":"nouser"}
+
             
-            except:
-                e = Users(username,id)
-                ret = e.getkey()
-                users[username] = e
+        else:
+            cur.execute("SELECT uuid FROM users WHERE username =? AND password=?",(username,hashlib.md5(password.encode()).hexdigest()))
+            records = cur.fetchall()
+            if(len(records) == 0):
+                conn.close()
+                return {"status":"badpasswd"}
+
+            else:
+                id = records[0][0]
+                conn.close()
+                ret = ""
+                try:
+                    ret = users[username].getkey()
                 
-            print(ret)
-            return {"status":"success","key":ret}
+                except:
+                    e = Users(username,id)
+                    ret = e.getkey()
+                    users[username] = e
+                    
+                print(ret)
+                return {"status":"success","key":ret}
+
+    except KeyError as e:
+        key = data["key"]
+
+    try:
+        if key and users[username].getkey() == key:
+            return "success"
+    except:
+        return "incorrect"
+
 
 def send_msg(user1,user2,msg):
     usr = fetchusers()

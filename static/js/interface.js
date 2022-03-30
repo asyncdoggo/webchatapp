@@ -1,10 +1,14 @@
 var uname = "";
-var key = ""
+var key = "";
 $(document).ready(function() {
-    key = document.cookie;
-    document.cookie = `${key};expires=Thu, 18 Dec 1990 12:00:00 UTC;path=/interface`;
+    key = localStorage.getItem("key");
     ullist = $("ul");
-    uname = $('#uname').text();
+    uname = localStorage.getItem("uname");
+
+    $("#logout").click(function(){
+        localStorage.clear();
+        send_form("/logout",{"uname":uname,"key":key});
+    })
 
     $.post("/",{
         all_data:`{"subject":"getusers","uname":"${uname}","key":${key}}`
@@ -20,7 +24,6 @@ $(document).ready(function() {
 
 function buttonclick(){
 var other = $(this).text();
-document.cookie = `${key};path=/chat`;
 send_form('/chat',{"subject":"sendto","from":uname,"to":other,"key":key});
 }
 

@@ -7,8 +7,7 @@ var key = ""
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 $(document).ready(function() {
-    key = document.cookie
-    document.cookie = `${key};expires=Thu, 18 Dec 1990 12:00:00 UTC;path=/chat`;
+    key = localStorage.getItem("key");
     var textarea = $("#textarea1");
     textarea.attr("readonly",true);
     username = $("#uname").text();
@@ -40,6 +39,7 @@ $(document).ready(function() {
 
 
     $("#logout").click(function(){
+        localStorage.clear();
         send_form("/logout",{"uname":username,"key":key});
     })
 
