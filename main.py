@@ -8,16 +8,14 @@ import hashlib
 import concurrent.futures
 from flask import redirect, render_template, request, url_for
 from flask_cors import CORS
-
+import re   
 from User import Users
 
 app = flask.Flask(__name__)
 CORS(app)
 
 users = {}
-messages = {0: ""}
-mid = 0
-
+regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
 conn = sqlite3.connect(database="chat.db")
 cur = conn.cursor()
@@ -28,7 +26,7 @@ conn.close()
 
 @app.route('/', methods=['POST', 'HEAD', 'GET'])
 def index():
-    global mid,users
+    global users
 
     if flask.request.method == 'GET':
         return render_template("index.html")
@@ -144,11 +142,24 @@ def registeruser(data):
     username = data["uname"]
     password = data["passwd1"]
 
+    if len(username) < 5 or " " in username:
+        return "Username should be more than 5 characters without spaces"
+    if len(password) < 5 or " " in password:
+        return "password should be more than 5 characters without spaces"
+    if not re.search(regex,email):
+        return "Enter a valid email"
+
+
     cur.execute("SELECT * FROM users WHERE username =?", (username,))
     records = cur.fetchall()
     if len(records) != 0:
-        return "already"
+        return "alreadyuser"
     else:
+        cur.execute("SELECT * FROM users WHERE email =?", (email,))
+        records = cur.fetchall()
+        if len(records) != 0:
+            return "alreadyemail"
+
         try:
             now = datetime.datetime.now()
             userid = uuid4().hex

@@ -11,22 +11,29 @@ $(document).ready(function(){
             all_data:JSON.stringify(data)
         },function(err,req,resp){
     
-            rmsg = resp["responseText"]
+            rmsg = resp["responseText"];
             if(rmsg == "success"){
-                $("#success").text("Registration successful")
-                $("#return").attr("hidden",false)    
+                $("#success").text("Registration successful");
+                $("#return").attr("hidden",false);
+                $("#error").text("");
             }
-            if(rmsg == "already"){
-                $("#error").text("User already exists")
+            else if(rmsg == "alreadyuser"){
+                $("#error").text("User already exists");
             }
-            if(rmsg == "faliure"){
-                $("#error").text("An unknown error occured")
+            else if(rmsg == "alreadyemail"){
+                $("#error").text("Email already exists");
+            }
+            else if(rmsg == "faliure"){
+                $("#error").text("An unknown error occured");
+            }
+            else{
+                $("#error").text(rmsg);
             }
         })
     
     }
     else{
-        $("#success").text("passwords do not match");
+        $("#error").text("passwords do not match");
     }
     
     $("#return").click(function() {
