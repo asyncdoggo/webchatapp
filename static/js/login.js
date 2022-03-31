@@ -11,9 +11,9 @@ $(document).ready(function(){
         msg = JSON.parse(resp["responseText"]);
 
         if(msg["status"] == "success"){
-            localStorage.setItem("uname",data["uname"]);
+            localStorage.setItem("uname",msg["uname"]);
             localStorage.setItem("key",msg["key"]);
-            send_form("/interface",{"uname":data["uname"],"key":msg["key"]});
+            send_form("/interface",{"uname":msg["uname"],"key":msg["key"]});
         }
         else if(msg["status"] == "nouser"){
             $("#error").text("Username does not exists");

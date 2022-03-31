@@ -142,20 +142,20 @@ def registeruser(data):
     username = data["uname"]
     password = data["passwd1"]
 
-    if len(username) < 5 or " " in username:
-        return "Username should be more than 5 characters without spaces"
-    if len(password) < 5 or " " in password:
-        return "password should be more than 5 characters without spaces"
+    if (len(username) < 5 and len(username) > 13) or " " in username:
+        return "Username should be between 5 to 13 characters without spaces"
+    if (len(password) < 5 and len(password) > 20) or " " in password:
+        return "password should be between 5 to 20 characters without spaces"
     if not re.search(regex,email):
         return "Enter a valid email"
 
 
-    cur.execute("SELECT * FROM users WHERE username =?", (username,))
+    cur.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,))
     records = cur.fetchall()
     if len(records) != 0:
         return "alreadyuser"
     else:
-        cur.execute("SELECT * FROM users WHERE email =?", (email,))
+        cur.execute("SELECT * FROM users WHERE email =? COLLATE NOCASE", (email,))
         records = cur.fetchall()
         if len(records) != 0:
             return "alreadyemail"
@@ -181,7 +181,7 @@ def loginuser(data):
 
         conn = sqlite3.connect(database="chat.db")
         cur = conn.cursor()
-        cur.execute("SELECT username FROM users WHERE username =?",(username,))
+        cur.execute("SELECT username FROM users WHERE username =? COLLATE NOCASE",(username,))
         records = cur.fetchall()
         
 
@@ -191,7 +191,8 @@ def loginuser(data):
 
             
         else:
-            cur.execute("SELECT uuid FROM users WHERE username =? AND password=?",(username,hashlib.md5(password.encode()).hexdigest()))
+            username = records[0][0]
+            cur.execute("SELECT uuid FROM users WHERE username =? COLLATE NOCASE AND password=?",(username,hashlib.md5(password.encode()).hexdigest()))
             records = cur.fetchall()
             if(len(records) == 0):
                 conn.close()
@@ -210,7 +211,7 @@ def loginuser(data):
                     users[username] = e
                     
                 print(ret)
-                return {"status":"success","key":ret}
+                return {"status":"success","key":ret,"uname":username}
 
     except KeyError as e:
         key = data["key"]
@@ -226,7 +227,7 @@ def send_msg(user1,user2,msg):
     usr = fetchusers()
     if user1 in usr and user2 in usr:
         try:
-            user1,user2 = sortedstring(user1,user2)
+            user1,user2 = sortedstring(user1.lower(),user2.lower())
             conn = sqlite3.connect(database="chat.db")
             cur = conn.cursor()
             cur.execute(f"CREATE TABLE IF NOT EXISTS {user1+user2} (id INTEGER PRIMARY KEY,message TEXT)")
@@ -245,7 +246,7 @@ def getmsg(user1,user2,key):
         usr = fetchusers()
         if user1 in usr and user2 in usr:
             try:
-                user1,user2 = sortedstring(user1,user2)
+                user1,user2 = sortedstring(user1.lower(),user2.lower())
                 conn = sqlite3.connect(database="chat.db")
                 cur = conn.cursor()
                 cur.execute(f"SELECT message FROM {user1+user2}")

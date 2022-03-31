@@ -24,6 +24,8 @@ $(document).ready(function() {
 
 function buttonclick(){
 var other = $(this).text();
+sessionStorage.setItem("touser",other);
+sessionStorage.setItem("from",uname);
 send_form('/chat',{"subject":"sendto","from":uname,"to":other,"key":key});
 }
 

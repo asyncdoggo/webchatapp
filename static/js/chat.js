@@ -1,8 +1,8 @@
 var mid = 0;
-var username = ""
-var touser = ""
-var getdata = {}
-var key = ""
+var username = sessionStorage.getItem("from");
+var touser = sessionStorage.getItem("touser");
+var getdata = {};
+var key = "";
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -10,8 +10,6 @@ $(document).ready(function() {
     key = localStorage.getItem("key");
     var textarea = $("#textarea1");
     textarea.attr("readonly",true);
-    username = $("#uname").text();
-    touser = $("#touser").text();
     getdata = {"subject":"getmsg","touser":touser,"fromuser":username,"key":key}
 
 
