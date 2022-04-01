@@ -130,7 +130,7 @@ def interface():
     try:
         u = flask.request.form["uname"]
         k = flask.request.form["key"]
-
+        un = users[u].getkey()
         if k == users[u].getkey():
             return flask.render_template("interface.html", uname=u)
         else:
@@ -147,9 +147,9 @@ def registeruser(data):
     username = data["uname"]
     password = data["passwd1"]
 
-    if (5 > len(username) > 13) or " " in username:
+    if (5 > len(username) < 13) or " " in username:
         return "Username should be between 5 to 13 characters without spaces"
-    if (5 > len(password) > 20) or " " in password:
+    if (5 > len(password) < 20) or " " in password:
         return "password should be between 5 to 20 characters without spaces"
     if not re.search(regex, email):
         return "Enter a valid email"
@@ -209,9 +209,8 @@ def loginuser(data):
                     ret = users[username].getkey()
 
                 except KeyError:
-                    u = Users(username, uid)
-                    ret = u.getkey()
-                    users[username] = u
+                    users[username] = Users(username, uid)
+                    ret = users[username].getkey()
 
                 print(ret)
                 return {"status": "success", "key": ret, "uname": username}
@@ -221,7 +220,12 @@ def loginuser(data):
 
     try:
         if key and users[username].getkey() == key:
-            return "success"
+            un = users[username]
+            uid = users[username].getid()
+            del un
+            users[username] = Users(username,uid)
+            new_key = users[username].getkey()
+            return {"status": "success", "key": new_key}
     except KeyError:
         return "incorrect"
 

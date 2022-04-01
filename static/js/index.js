@@ -16,9 +16,10 @@ $(document).ready(function(){
         $.post("/",{
             all_data:`{"subject":"login","uname":"${uname}","key":"${key}"}`
         },function(err,req,resp){
-            msg = resp["responseText"];
-            if(msg == "success"){
-                send_form("/interface",{"key":key,"uname":uname});
+            msg = JSON.parse(resp["responseText"]);
+            if(msg["status"] == "success"){
+                localStorage.setItem("key",msg["key"]);
+                send_form("/interface",{"key":msg["key"],"uname":uname});
             }
         });
     }
