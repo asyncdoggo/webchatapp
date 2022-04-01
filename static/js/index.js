@@ -3,7 +3,7 @@ $(document).ready(function(){
         window.location.href = "/register"
     })
 
-    $("#loginbutton").click(function(){
+    $("#login").click(function(){
         window.location.href = "/login"
     })
 

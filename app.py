@@ -5,13 +5,10 @@ import json
 import re
 import sqlite3
 from uuid import uuid4
-
 import flask
-
 from User import Users
 
 app = flask.Flask(__name__)
-
 users = {}
 regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
@@ -25,7 +22,7 @@ try:
     cur.execute("INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
                 ("root@root.com", "root", str(hashlib.md5("root".encode()).hexdigest()), 77777777, now))
 
-except Exception as e:
+except:
     pass
 finally:
     conn.commit()
@@ -61,7 +58,6 @@ def index():
                     return "bad key"
 
             elif data["subject"] == "getmsg":
-                u = data["fromuser"]
                 try:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future = executor.submit(getmsg, data["fromuser"], data['touser'], data["key"])
@@ -132,7 +128,7 @@ def logout():
 @app.route('/interface', methods=["POST"])
 def interface():
     try:
-        u = flask.request.form['uname']
+        u = flask.request.form["uname"]
         k = flask.request.form["key"]
 
         if k == users[u].getkey():
@@ -183,7 +179,6 @@ def registeruser(data):
 
 
 def loginuser(data):
-    key = ""
     username = ""
     try:
         username = data["uname"]
@@ -198,7 +193,6 @@ def loginuser(data):
             conn.close()
             return {"status": "nouser"}
 
-
         else:
             username = records[0][0]
             cur.execute("SELECT uuid FROM users WHERE username =? COLLATE NOCASE AND password=?",
@@ -211,7 +205,6 @@ def loginuser(data):
             else:
                 uid = records[0][0]
                 conn.close()
-                ret = ""
                 try:
                     ret = users[username].getkey()
 
