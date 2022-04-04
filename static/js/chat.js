@@ -12,7 +12,6 @@ $(document).ready(function() {
     textarea.attr("readonly",true);
     getdata = {"subject":"getmsg","touser":touser,"fromuser":username,"key":key}
 
-
     console.log(username);
 
     $("#submit").click(function(){
@@ -45,12 +44,6 @@ $(document).ready(function() {
     getloop();
 })
 
-
-var getdata = {"subject":"getmsg",
-            "touser":touser,
-            "fromuser":username
-                }
-
 var msg  = "";
 
 var count = 0
@@ -63,7 +56,6 @@ async function getloop(){
         $.post("/",{
             all_data:JSON.stringify(getdata)
         },function(err,req,resp){
-            console.log(resp["responseText"])
             msg = JSON.parse(resp["responseText"]);
             count = Object.keys(msg).length;
 

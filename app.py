@@ -21,7 +21,6 @@ try:
         "UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
     cur.execute("INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
                 ("root@root.com", "root", str(hashlib.md5("root".encode()).hexdigest()), 77777777, now))
-
 except:
     pass
 finally:
@@ -237,7 +236,7 @@ def send_msg(user1, user2, msg):
             user1, user2 = sortedstring(user1.lower(), user2.lower())
             conn = sqlite3.connect(database="chat.db")
             cur = conn.cursor()
-            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT)")
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,date TEXT)")
             conn.commit()
             cur.execute(f"INSERT INTO {user1 + user2} (message) VALUES (?)", (msg,))
             conn.commit()
