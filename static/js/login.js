@@ -4,9 +4,13 @@ $(document).ready(function(){
     var data = $("#login_form").serializeJSON();
     data["subject"] = "login";
 
-    $.post("/",{
-        all_data:JSON.stringify(data)
-    },function(err,req,resp){
+    $.ajax({
+    type:'POST',
+    url:"/",
+    data:JSON.stringify(data),
+    contentType: "application/json",
+    dataType: 'json',
+    success:function(err,req,resp){
 
         msg = JSON.parse(resp["responseText"]);
 
@@ -21,6 +25,7 @@ $(document).ready(function(){
         else if(msg["status"] == "badpasswd"){
             $("#error").text("password is wrong");
         }
+}
 });
 })
 })

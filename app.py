@@ -36,11 +36,13 @@ def index():
     if flask.request.method == 'GET':
         return flask.render_template("index.html")
 
+    if flask.request.method == "HEAD":
+        return flask.Response("")
+
     if flask.request.method == 'POST':
         try:
             print(flask.request.form)
-            data = flask.request.form['all_data']
-            data = json.loads(data)
+            data = flask.request.get_json()
 
             if data["subject"] == "login":
                 resp = loginuser(data)
@@ -54,7 +56,7 @@ def index():
                     res = send_msg(user1, user2, data["message"])
                     return res
                 else:
-                    return "bad key"
+                    return {"status":"bad key"}
 
             elif data["subject"] == "getmsg":
                 try:
@@ -63,7 +65,7 @@ def index():
                         return_value = future.result()
                         return return_value
                 except KeyError:
-                    return "bad key"
+                    return {"status":"bad key"}
 
             elif data["subject"] == "register":
                 resp = registeruser(data)
@@ -76,13 +78,13 @@ def index():
                     r = {i: j for i, j in zip(range(len(res)), res)}
                     return r
                 else:
-                    return "wrong key"
+                    return {"status":"bad key"}
 
             else:
-                return "error"
+                return {"status":"error"}
         except Exception as e:
             print(repr(e))
-            return "bad request"
+            return {"status":"bad request"}
 
 
 @app.route("/register")
@@ -105,10 +107,10 @@ def chat():
             user2 = data['to']
             return flask.render_template("chat.html", uname=user1, touser=user2)
         else:
-            return "bad data"
+            return {"status":"bad data"}
     except Exception as e:
         print(repr(e))
-        return "bad data"
+        return {"status":"bad data"}
 
 
 @app.route("/logout", methods=["POST"])
@@ -121,7 +123,7 @@ def logout():
             return flask.redirect(flask.url_for("index"))
     except Exception as e:
         print(repr(e))
-        return "bad request"
+        return {"status":"bad request"}
 
 
 @app.route('/interface', methods=["POST"])
@@ -133,10 +135,10 @@ def interface():
         if k == users[u].getkey():
             return flask.render_template("interface.html", uname=u)
         else:
-            return "bad key"
+            return {"status":"bad key"}
     except Exception as e:
         print(repr(e))
-        return "bad request"
+        return {"status":"bad request"}
 
 
 def registeruser(data):
@@ -147,21 +149,21 @@ def registeruser(data):
     password = data["passwd1"]
 
     if (5 > len(username) < 13) or " " in username:
-        return "Username should be between 5 to 13 characters without spaces"
+        return {"status":"Username should be between 5 to 13 characters without spaces"}
     if (5 > len(password) < 20) or " " in password:
-        return "password should be between 5 to 20 characters without spaces"
+        return {"status":"password should be between 5 to 20 characters without spaces"}
     if not re.search(regex, email):
-        return "Enter a valid email"
+        return {"status":"Enter a valid email"}
 
     cur.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,))
     records = cur.fetchall()
     if len(records) != 0:
-        return "alreadyuser"
+        return {"status":"alreadyuser"}
     else:
         cur.execute("SELECT * FROM users WHERE email =? COLLATE NOCASE", (email,))
         records = cur.fetchall()
         if len(records) != 0:
-            return "alreadyemail"
+            return {"status":"alreadyemail"}
 
         try:
             now = datetime.datetime.now()
@@ -171,10 +173,10 @@ def registeruser(data):
                 (email, username, str(hashlib.md5(password.encode()).hexdigest()), userid, now))
             conn.commit()
             conn.close()
-            return "success"
+            return {"status":"success"}
         except Exception as e:
             print("Error while inserting the new record :", repr(e))
-            return "failure"
+            return {"status":"failure"}
 
 
 def loginuser(data):
@@ -226,7 +228,7 @@ def loginuser(data):
             new_key = users[username].getkey()
             return {"status": "success", "key": new_key}
     except KeyError:
-        return "incorrect"
+        return {"status":"incorrect"}
 
 
 def send_msg(user1, user2, msg):
@@ -241,11 +243,11 @@ def send_msg(user1, user2, msg):
             cur.execute(f"INSERT INTO {user1 + user2} (message) VALUES (?)", (msg,))
             conn.commit()
             conn.close()
-            return "success"
+            return {"status":"success"}
         except:
             pass
     else:
-        return "bad username"
+        return {"status":"bad username"}
 
 
 def getmsg(user1, user2, key):
@@ -265,9 +267,9 @@ def getmsg(user1, user2, key):
 
             except Exception as e:
                 print(repr(e))
-                return "error"
+                return {"status":"error"}
         else:
-            return "bad username"
+            return {"status":"bad username"}
 
 
 def sortedstring(a, b):

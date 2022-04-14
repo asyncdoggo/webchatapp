@@ -10,16 +10,21 @@ $(document).ready(function() {
         send_form("/logout",{"uname":uname,"key":key});
     })
 
-    $.post("/",{
-        all_data:`{"subject":"getusers","uname":"${uname}","key":${key}}`
-    },function(err,req,resp){
+    $.ajax({
+    type:'POST',
+    url:"/",
+    data:`{"subject":"getusers","uname":"${uname}","key":${key}}`,
+    contentType: "application/json",
+    dataType: 'json',
+    success:function(err,req,resp){
         msg = JSON.parse(resp["responseText"]);
         ullist.empty();
         for(i in Object.keys(msg)){
         ullist.append(`<li><button id="${msg[i]}">${msg[i]}</button></li>`);
         document.getElementById(msg[i]).onclick = buttonclick;
         }
-    })
+    }
+});
 });
 
 function buttonclick(){

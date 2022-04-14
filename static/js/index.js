@@ -14,7 +14,9 @@ $(document).ready(function(){
     if(key.length){
 
         $.post("/",{
-            all_data:`{"subject":"login","uname":"${uname}","key":"${key}"}`
+            all_data:`{"subject":"login","uname":"${uname}","key":"${key}"}`,
+            contentType: "application/json",
+            dataType: 'json'
         },function(err,req,resp){
             msg = JSON.parse(resp["responseText"]);
             if(msg["status"] == "success"){
