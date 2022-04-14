@@ -14,7 +14,7 @@ $(document).ready(function () {
 
     $("#submit").click(function () {
         var textbox = $("#textbox1").val();
-        var message = username + ":" + textbox + '\n';
+        var message = textbox;
         console.log(message);
 
         msgdata = {
@@ -66,14 +66,17 @@ async function getloop() {
             dataType: 'json',
             success: function (err, req, resp) {
                 msg = JSON.parse(resp["responseText"]);
-                count = Object.keys(msg).length;
+                console.log(msg);
 
+                var messages = msg["messages"];
+                var user = msg["user"];
+                count = messages.length;
                 if (count > prev) {
                     textarea.val("");
-                    for (m in Object.keys(msg)) {
-                        textarea.val(textarea.val() + msg[m]);
-                        prev = count;
+                    for (i=0;i<messages.length;i++){
+                        textarea.val(textarea.val() + user[i]+":"+messages[i] +"\n");
                     }
+                    prev = count;
                 }
             }
         });

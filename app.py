@@ -41,7 +41,6 @@ def index():
 
     if flask.request.method == 'POST':
         try:
-            print(flask.request.form)
             data = flask.request.get_json()
 
             if data["subject"] == "login":
@@ -56,7 +55,7 @@ def index():
                     res = send_msg(user1, user2, data["message"])
                     return res
                 else:
-                    return {"status":"bad key"}
+                    return {"status": "bad key"}
 
             elif data["subject"] == "getmsg":
                 try:
@@ -64,8 +63,9 @@ def index():
                         future = executor.submit(getmsg, data["fromuser"], data['touser'], data["key"])
                         return_value = future.result()
                         return return_value
-                except KeyError:
-                    return {"status":"bad key"}
+                except KeyError as e:
+                    print(repr(e))
+                    return {"status": "bad key"}
 
             elif data["subject"] == "register":
                 resp = registeruser(data)
@@ -78,13 +78,20 @@ def index():
                     r = {i: j for i, j in zip(range(len(res)), res)}
                     return r
                 else:
-                    return {"status":"bad key"}
+                    return {"status": "bad key"}
 
+            elif data["subject"] == "logout":
+                res = logout(u=data["uname"], k=data["key"])
+                return res
+
+            elif data["subject"] == "chat":
+                res = chat(t=data["to"], f=data["from"], k=data["key"])
+                return res
             else:
-                return {"status":"error"}
+                return {"status": "error"}
         except Exception as e:
             print(repr(e))
-            return {"status":"bad request"}
+            return {"status": "bad request"}
 
 
 @app.route("/register")
@@ -98,32 +105,50 @@ def login():
 
 
 @app.route("/chat", methods=["POST"])
-def chat():
-    try:
-        data = flask.request.form
-        u = data["from"]
-        if users[u].getkey() == str(data["key"]) and data["subject"] == "sendto":
-            user1 = data['from']
-            user2 = data['to']
-            return flask.render_template("chat.html", uname=user1, touser=user2)
-        else:
-            return {"status":"bad data"}
-    except Exception as e:
-        print(repr(e))
-        return {"status":"bad data"}
+def chat(t=None, f=None, k=None):
+    if t is None:
+        try:
+            data = flask.request.form
+            u = data["from"]
+            if users[u].getkey() == str(data["key"]) and data["subject"] == "sendto":
+                user1 = data['from']
+                user2 = data['to']
+                return flask.render_template("chat.html", uname=user1, touser=user2)
+            else:
+                return {"status": "bad data"}
+        except Exception as e:
+            print(repr(e))
+            return {"status": "bad data"}
+
+    else:
+        try:
+            if users[f].getkey() == str(k):
+                return {"status": "success"}
+        except Exception as e:
+            print(repr(e))
 
 
 @app.route("/logout", methods=["POST"])
-def logout():
-    try:
-        u = flask.request.form['uname']
-        if users[u].getkey() == flask.request.form["key"]:
-            un = users.pop(u)
-            del un
-            return flask.redirect(flask.url_for("index"))
-    except Exception as e:
-        print(repr(e))
-        return {"status":"bad request"}
+def logout(u=None, k=None):
+    if k is None:
+        try:
+            uname = flask.request.form['uname']
+            if users[uname].getkey() == flask.request.form["key"]:
+                un = users.pop(uname)
+                del un
+                return flask.redirect(flask.url_for("index"))
+        except Exception as e:
+            print(repr(e))
+            return {"status": "bad request"}
+    else:
+        try:
+            if users[u].getkey() == k:
+                un = users.pop(u)
+                del un
+                return {"status": "logout"}
+        except Exception as e:
+            print(repr(e))
+            return {"status": "error"}
 
 
 @app.route('/interface', methods=["POST"])
@@ -135,10 +160,10 @@ def interface():
         if k == users[u].getkey():
             return flask.render_template("interface.html", uname=u)
         else:
-            return {"status":"bad key"}
+            return {"status": "bad key"}
     except Exception as e:
         print(repr(e))
-        return {"status":"bad request"}
+        return {"status": "bad request"}
 
 
 def registeruser(data):
@@ -149,21 +174,21 @@ def registeruser(data):
     password = data["passwd1"]
 
     if (5 > len(username) < 13) or " " in username:
-        return {"status":"Username should be between 5 to 13 characters without spaces"}
+        return {"status": "Username should be between 5 to 13 characters without spaces"}
     if (5 > len(password) < 20) or " " in password:
-        return {"status":"password should be between 5 to 20 characters without spaces"}
+        return {"status": "password should be between 5 to 20 characters without spaces"}
     if not re.search(regex, email):
-        return {"status":"Enter a valid email"}
+        return {"status": "Enter a valid email"}
 
     cur.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,))
     records = cur.fetchall()
     if len(records) != 0:
-        return {"status":"alreadyuser"}
+        return {"status": "alreadyuser"}
     else:
         cur.execute("SELECT * FROM users WHERE email =? COLLATE NOCASE", (email,))
         records = cur.fetchall()
         if len(records) != 0:
-            return {"status":"alreadyemail"}
+            return {"status": "alreadyemail"}
 
         try:
             now = datetime.datetime.now()
@@ -173,10 +198,10 @@ def registeruser(data):
                 (email, username, str(hashlib.md5(password.encode()).hexdigest()), userid, now))
             conn.commit()
             conn.close()
-            return {"status":"success"}
+            return {"status": "success"}
         except Exception as e:
             print("Error while inserting the new record :", repr(e))
-            return {"status":"failure"}
+            return {"status": "failure"}
 
 
 def loginuser(data):
@@ -224,30 +249,30 @@ def loginuser(data):
             un = users[username]
             uid = users[username].getid()
             del un
-            users[username] = Users(username,uid)
+            users[username] = Users(username, uid)
             new_key = users[username].getkey()
             return {"status": "success", "key": new_key}
     except KeyError:
-        return {"status":"incorrect"}
+        return {"status": "incorrect"}
 
 
-def send_msg(user1, user2, msg):
+def send_msg(fromu, tou, msg):
     usr = fetchusers()
-    if user1 in usr and user2 in usr:
+    if fromu in usr and tou in usr:
         try:
-            user1, user2 = sortedstring(user1.lower(), user2.lower())
+            user1, user2 = sortedstring(fromu.lower(), tou.lower())
             conn = sqlite3.connect(database="chat.db")
             cur = conn.cursor()
-            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,date TEXT)")
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,fromuser TEXT,date TEXT)")
             conn.commit()
-            cur.execute(f"INSERT INTO {user1 + user2} (message) VALUES (?)", (msg,))
+            cur.execute(f"INSERT INTO {user1 + user2} (message,fromuser,touser) VALUES (?,?,?)", (msg,fromu,tou))
             conn.commit()
             conn.close()
-            return {"status":"success"}
-        except:
-            pass
+            return {"status": "success"}
+        except Exception as e:
+            print(repr(e))
     else:
-        return {"status":"bad username"}
+        return {"status": "bad username"}
 
 
 def getmsg(user1, user2, key):
@@ -258,18 +283,19 @@ def getmsg(user1, user2, key):
                 user1, user2 = sortedstring(user1.lower(), user2.lower())
                 conn = sqlite3.connect(database="chat.db")
                 cur = conn.cursor()
-                cur.execute(f"SELECT message FROM {user1 + user2}")
+                cur.execute(f"SELECT message,fromuser FROM {user1 + user2}")
                 res = cur.fetchall()
                 conn.close()
-                res = [res[i][0] for i in range(len(res))]
-                r = {i: j for i, j in zip(range(len(res)), res)}
+                r1 = [res[i][0] for i in range(len(res))]
+                r2 = [res[i][1] for i in range(len(res))]
+                r = {"messages": r1, "user": r2}
                 return r
 
             except Exception as e:
                 print(repr(e))
-                return {"status":"error"}
+                return {"status": "error"}
         else:
-            return {"status":"bad username"}
+            return {"status": "bad username"}
 
 
 def sortedstring(a, b):
