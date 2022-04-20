@@ -7,6 +7,10 @@ $(document).ready(function(){
         window.location.href = "/login"
     })
 
+    $("#forgot").click(function(){
+        window.location.href = "/reset"
+    })
+
     try{
     var key = localStorage.getItem("key");
     var uname = localStorage.getItem("uname");
