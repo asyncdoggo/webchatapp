@@ -2,6 +2,7 @@ import concurrent.futures
 import datetime
 import hashlib
 import json
+from pydoc import render_doc
 import re
 import sqlite3
 from uuid import uuid4
@@ -59,10 +60,8 @@ def index():
 
             elif data["subject"] == "getmsg":
                 try:
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(getmsg, data["fromuser"], data['touser'], data["key"])
-                        return_value = future.result()
-                        return return_value
+                    res = getmsg(data["fromuser"], data['touser'], data["key"])
+                    return res
                 except KeyError as e:
                     print(repr(e))
                     return {"status": "bad key"}
@@ -87,6 +86,12 @@ def index():
             elif data["subject"] == "chat":
                 res = chat(t=data["to"], f=data["from"], k=data["key"])
                 return res
+
+            elif data["subject"] == "resetpass":
+                # res = resetpass(uname, oldpass, newpass)
+                # return res
+                pass
+
             else:
                 return {"status": "error"}
         except Exception as e:
@@ -164,6 +169,15 @@ def interface():
     except Exception as e:
         print(repr(e))
         return {"status": "bad request"}
+
+
+@app.route('/reset', methods=["GET"])
+def reset():
+    return flask.render_template("reset.html")
+
+
+def resetpass(uname, oldpass, newpass):
+    res = fetchusers()
 
 
 def registeruser(data):
@@ -263,9 +277,10 @@ def send_msg(fromu, tou, msg):
             user1, user2 = sortedstring(fromu.lower(), tou.lower())
             conn = sqlite3.connect(database="chat.db")
             cur = conn.cursor()
-            cur.execute(f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,fromuser TEXT,date TEXT)")
+            cur.execute(
+                f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,fromuser TEXT,date TEXT)")
             conn.commit()
-            cur.execute(f"INSERT INTO {user1 + user2} (message,fromuser,touser) VALUES (?,?,?)", (msg,fromu,tou))
+            cur.execute(f"INSERT INTO {user1 + user2} (message,fromuser) VALUES (?,?)", (msg, fromu))
             conn.commit()
             conn.close()
             return {"status": "success"}
@@ -299,20 +314,13 @@ def getmsg(user1, user2, key):
 
 
 def sortedstring(a, b):
-    f = 0
     for i, j in zip(a, b):
         if i > j:
-            f = 1
-            break
+            return a, b
         elif i < j:
-            f = 0
-            break
+            return b, a
 
-    if f:
-        return a, b
-    else:
-        return b, a
-
+    return a,b
 
 def fetchusers():
     conn = sqlite3.connect(database="chat.db")
