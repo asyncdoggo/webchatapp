@@ -5,6 +5,7 @@ import json
 from pydoc import render_doc
 import re
 import sqlite3
+from turtle import update
 from uuid import uuid4
 import flask
 from User import Users
@@ -88,9 +89,8 @@ def index():
                 return res
 
             elif data["subject"] == "resetpass":
-                # res = resetpass(uname, oldpass, newpass)
-                # return res
-                pass
+                res = resetpass(data["uname"], data["oldpass"], data["newpass"])
+                return res
 
             else:
                 return {"status": "error"}
@@ -178,6 +178,26 @@ def reset():
 
 def resetpass(uname, oldpass, newpass):
     res = fetchusers()
+    if uname in res:
+        if (5 > len(newpass) < 20) or " " in newpass:
+            return {"status": "password should be between 5 to 20 characters without spaces"}
+
+        conn = sqlite3.connect("chat.db")
+        cur = conn.cursor()
+        cur.execute("SELECT username FROM users WHERE username = ? COLLATE NOCASE AND password=?",
+                    (uname, str(hashlib.md5(oldpass.encode()).hexdigest())))
+        res = cur.fetchall()
+        if res:
+            cur.execute(
+                f"UPDATE users set password=\"{str(hashlib.md5(newpass.encode()).hexdigest())}\" WHERE password = \"{str(hashlib.md5(oldpass.encode()).hexdigest())}\"")
+            conn.commit()
+            conn.close()
+            return {"status": "success"}
+        else:
+            conn.close()
+            return {"status": "badpass"}
+    else:
+        return {"status": "nouser"}
 
 
 def registeruser(data):
@@ -320,7 +340,8 @@ def sortedstring(a, b):
         elif i < j:
             return b, a
 
-    return a,b
+    return a, b
+
 
 def fetchusers():
     conn = sqlite3.connect(database="chat.db")

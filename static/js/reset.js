@@ -1,53 +1,70 @@
-$(document).ready(function(){
-    $('#resetpass').on('submit', function(e) {
-    e.preventDefault();
-    var data = $("#resetpass").serializeJSON();
-    data["subject"] = "resetpass";
+$(document).ready(function () {
+    $('#resetpass').on('submit', function (e) {
+        e.preventDefault();
+        var data = $("#resetpass").serializeJSON();
+        data["subject"] = "resetpass";
 
-    $.ajax({
-    type:'POST',
-    url:"/",
-    data:JSON.stringify(data),
-    contentType: "application/json",
-    dataType: 'json',
-    success:function(err,req,resp){
+        if (data["newpass"] == data["newpass2"]) {
 
-        msg = JSON.parse(resp["responseText"]);
+            $.ajax({
+                type: 'POST',
+                url: "/",
+                data: JSON.stringify(data),
+                contentType: "application/json",
+                dataType: 'json',
+                success: function (err, req, resp) {
 
-        if(msg["status"] == "success"){
-            localStorage.setItem("uname",msg["uname"]);
-            localStorage.setItem("key",msg["key"]);
-            send_form("/interface",{"uname":msg["uname"],"key":msg["key"]});
+                    msg = JSON.parse(resp["responseText"]);
+
+
+                    if (msg["status"] == "success") {
+                        $("#success").attr("hidden", false);
+                        $("#hbutton").attr("hidden", false);
+                        $("#error").text("");
+                        $("#success").text("Reset Successful");
+
+                    }
+                    else if (msg["status"] == "nouser") {
+                        $("#error").text("Username does not exists");
+                        $("#success").text("");
+                    }
+                    else if (msg["status"] == "badpass") {
+                        $("#error").text("password is wrong");
+                    }
+                    else {
+                        $("#error").text(msg["status"]);
+                    }
+                }
+            });
         }
-        else if(msg["status"] == "nouser"){
-            $("#error").text("Username does not exists");
+        else {
+            $("#error").text("New password does not match");
         }
-        else if(msg["status"] == "badpasswd"){
-            $("#error").text("password is wrong");
-        }
-}
-});
+    })
 })
+
+$("#hbutton").click(function () {
+    window.location.href = "/";
 })
 
-function send_form(action,params){
-        var form = document.createElement('form');
-            form.setAttribute('method', 'post');
-            form.setAttribute('action', action);
+function send_form(action, params) {
+    var form = document.createElement('form');
+    form.setAttribute('method', 'post');
+    form.setAttribute('action', action);
 
-            for(var key in params) {
-                if(params.hasOwnProperty(key)) {
-                    var hiddenField = document.createElement("input");
-                    hiddenField.setAttribute("type", "hidden");
-                    hiddenField.setAttribute("name", key);
-                    hiddenField.setAttribute("value", params[key]);
-        
-                    form.appendChild(hiddenField);
-                 }
-            }
-        
-            document.body.appendChild(form);
-            form.submit();
+    for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+
+            form.appendChild(hiddenField);
+        }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 

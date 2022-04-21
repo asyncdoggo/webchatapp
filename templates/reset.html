@@ -2,26 +2,27 @@
 <html lang="en">
   <head>
     <title>webchat</title>
-    <link rel="stylesheet" href="/static/css/index.css">
   </head>
     <body>
-      <h1>{{error}}</h1> 
       <div class="container">
           <h1>Reset Password</h1>
           <form id="resetpass">
             <label for="uname">username:</label><br>
             <input type="text" id="uname" name="uname"><br>
-            <label for="passwd">old password:</label><br>
-            <input type="password" id="oldpass" name="passwd"><br>
+            <label for="oldpass">old password:</label><br>
+            <input type="password" id="oldpass" name="oldpass"><br>
             <label for="newpass">new password:</label><br>
             <input type="password" id="newpass" name="newpass"><br>
             <label for="newpass2">reenter password:</label><br>
             <input type="password" id="newpass2" name="newpass2"><br>
-            <input type="submit" value="login">
+            <input type="submit" value="reset">
           </form>
-	<button id="reset">reset password</button>
+        <p id="error"></p>
+        <p hidden id="success">Password reset successful</p>
+        <button id="hbutton" hidden>Return</button>
       </div>
 	  <script src="https://code.jquery.com/jquery-3.6.0.min.js"> </script>
-	  <script src="/static/js/forgot.js"> </script>
+       <script src="/static/js/jquery.serializejson.js"></script>
+	  <script src="/static/js/reset.js"> </script>
   </body>
 </html>

@@ -40,24 +40,26 @@ $(document).ready(function () {
     });
 
 
-$("#logout").click(function () {
-    localStorage.clear();
-    send_form("/logout", { "uname": username, "key": key });
-})
+    $("#logout").click(function () {
+        localStorage.clear();
+        send_form("/logout", { "uname": username, "key": key });
+    })
 
 
-getloop();
+    getloop();
 })
 
 var msg = "";
 
 var count = 0
 var prev = count;
+
+
 async function getloop() {
     var textarea = $("#textarea1");
     while (true) {
         await sleep(1000);
-
+        try{
         $.ajax({
             type: 'POST',
             url: "/",
@@ -73,13 +75,17 @@ async function getloop() {
                 count = messages.length;
                 if (count > prev) {
                     textarea.val("");
-                    for (i=0;i<messages.length;i++){
-                        textarea.val(textarea.val() + user[i]+":"+messages[i] +"\n");
+                    for (i = 0; i < messages.length; i++) {
+                        textarea.val(textarea.val() + user[i] + ":" + messages[i] + "\n");
                     }
                     prev = count;
                 }
             }
         });
+
+        }
+        catch(err){ 
+        }
 
 
     }
