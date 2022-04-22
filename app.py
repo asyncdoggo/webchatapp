@@ -1,11 +1,8 @@
-import concurrent.futures
 import datetime
 import hashlib
-import json
-from pydoc import render_doc
 import re
 import sqlite3
-from turtle import update
+import time
 from uuid import uuid4
 import flask
 from User import Users
@@ -23,8 +20,10 @@ try:
         "UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
     cur.execute("INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
                 ("root@root.com", "root", str(hashlib.md5("root".encode()).hexdigest()), 77777777, now))
-except:
+
+except sqlite3.Error:
     pass
+
 finally:
     conn.commit()
     conn.close()
@@ -32,11 +31,11 @@ finally:
 
 
 @app.route('/', methods=['POST', 'HEAD', 'GET'])
-def index():
+def app_root():
     global users
 
     if flask.request.method == 'GET':
-        return flask.render_template("index.html")
+        return flask.render_template("login.html")
 
     if flask.request.method == "HEAD":
         return flask.Response("")
@@ -141,7 +140,7 @@ def logout(u=None, k=None):
             if users[uname].getkey() == flask.request.form["key"]:
                 un = users.pop(uname)
                 del un
-                return flask.redirect(flask.url_for("index"))
+                return flask.redirect(flask.url_for("login"))
         except Exception as e:
             print(repr(e))
             return {"status": "bad request"}

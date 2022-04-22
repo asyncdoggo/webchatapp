@@ -5,7 +5,6 @@
     <link rel="stylesheet" href="/static/css/login.css">
   </head>
     <body>
-      <h1>{{error}}</h1> 
       <div class="container">
 		<form id="login_form">
             <label for="uname">username:</label><br>
@@ -14,6 +13,8 @@
             <input type="password" id="passwd" name="passwd"><br>
             <input type="submit" value="login">
           </form>
+          <button id="register">Register</button>
+          <button id="resetpass">Reset password</button>
           <p id="error"></p>
       </div>
 	  <script src="https://code.jquery.com/jquery-3.6.0.min.js"> </script>

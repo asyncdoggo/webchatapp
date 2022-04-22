@@ -1,4 +1,34 @@
 $(document).ready(function () {
+    $("#register").click(function () {
+        window.location.href = "/register"
+    })
+
+    $("#resetpass").click(function () {
+        window.location.href = "/reset"
+    })
+
+    try {
+        var key = localStorage.getItem("key");
+        var uname = localStorage.getItem("uname");
+
+        if (key.length) {
+
+            $.post("/", {
+                all_data: `{"subject":"login","uname":"${uname}","key":"${key}"}`,
+                contentType: "application/json",
+                dataType: 'json'
+            }, function (err, req, resp) {
+                msg = JSON.parse(resp["responseText"]);
+                if (msg["status"] == "success") {
+                    localStorage.setItem("key", msg["key"]);
+                    send_form("/interface", { "key": msg["key"], "uname": uname });
+                }
+            });
+        }
+    }
+    catch (e) {
+    }
+
     $('#login_form').on('submit', function (e) {
         e.preventDefault();
         var data = $("#login_form").serializeJSON();
