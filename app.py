@@ -1,11 +1,20 @@
 import datetime
 import hashlib
+import os.path
 import re
 import sqlite3
-import time
 from uuid import uuid4
+import secrets
 import flask
 from User import Users
+from crypt import AESCipher
+
+if os.path.exists("key"):
+    key = open("key", "r").read()
+else:
+    key = secrets.token_hex(64)
+    open("key", 'w').write(key)
+crypto = AESCipher(key)
 
 app = flask.Flask(__name__)
 users = {}
@@ -19,10 +28,12 @@ with sqlite3.connect(database="chat.db") as conn:
             "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, username TEXT NOT NULL "
             "UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
         cur.execute("INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
-                    ("root@root.com", "root", str(hashlib.md5("root".encode()).hexdigest()), 77777777, now))
+                    ("root@root.com", "root", crypto.encrypt("root"), 77777777, now))
         conn.commit()
+
     except sqlite3.Error:
         pass
+
 
 @app.route('/', methods=['POST', 'HEAD', 'GET'])
 def app_root():
@@ -36,7 +47,7 @@ def app_root():
 
     if flask.request.method == 'POST':
         try:
-            data = flask.request.get_json()
+            data = flask.request.get_json(force=True)
 
             if data["subject"] == "login":
                 resp = loginuser(data)
@@ -177,12 +188,12 @@ def resetpass(uname, oldpass, newpass):
 
         with sqlite3.connect("chat.db") as conn:
             cur = conn.cursor()
-            cur.execute("SELECT username FROM users WHERE username = ? COLLATE NOCASE AND password=?",
-                        (uname, str(hashlib.md5(oldpass.encode()).hexdigest())))
-            res = cur.fetchall()
-            if res:
+            cur.execute("SELECT password FROM users WHERE username = ? COLLATE NOCASE",
+                        (uname,))
+            res = cur.fetchall()[0][0]
+            if crypto.decrypt(res) == oldpass:
                 cur.execute(
-                    f"UPDATE users set password=\"{str(hashlib.md5(newpass.encode()).hexdigest())}\" WHERE password = \"{str(hashlib.md5(oldpass.encode()).hexdigest())}\"")
+                    f"UPDATE users set password=\"{crypto.encrypt(newpass).decode('utf')}\" WHERE username=\"{uname}\"")
                 conn.commit()
                 return {"status": "success"}
             else:
@@ -192,19 +203,19 @@ def resetpass(uname, oldpass, newpass):
 
 
 def registeruser(data):
-    with sqlite3.connect("chat.db") as conn:
+    email = data["email"]
+    username = data["uname"]
+    password = data["passwd1"]
+
+    if (5 > len(username) < 13) or " " in username:
+        return {"status": "Username should be between 5 to 13 characters without spaces"}
+    if (5 > len(password) < 20) or " " in password:
+        return {"status": "password should be between 5 to 20 characters without spaces"}
+    if not re.search(regex, email):
+        return {"status": "Enter a valid email"}
+
+    with sqlite3.connect(database="chat.db") as conn:
         cur = conn.cursor()
-        email = data["email"]
-        username = data["uname"]
-        password = data["passwd1"]
-
-        if (5 > len(username) < 13) or " " in username:
-            return {"status": "Username should be between 5 to 13 characters without spaces"}
-        if (5 > len(password) < 20) or " " in password:
-            return {"status": "password should be between 5 to 20 characters without spaces"}
-        if not re.search(regex, email):
-            return {"status": "Enter a valid email"}
-
         cur.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,))
         records = cur.fetchall()
         if len(records) != 0:
@@ -220,8 +231,9 @@ def registeruser(data):
                 userid = uuid4().hex
                 cur.execute(
                     "INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
-                    (email, username, str(hashlib.md5(password.encode()).hexdigest()), userid, now))
+                    (email, username, crypto.encrypt(password), userid, now))
                 conn.commit()
+
                 return {"status": "success"}
             except Exception as e:
                 print("Error while inserting the new record :", repr(e))
@@ -233,47 +245,44 @@ def loginuser(data):
     try:
         username = data["uname"]
         password = data["passwd"]
-        with sqlite3.connect("chat.db") as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT username FROM users WHERE username =? COLLATE NOCASE", (username,))
-            records = cur.fetchall()
 
+        with sqlite3.connect(database="chat.db") as conn:
+            cur = conn.cursor()
+
+            cur.execute("SELECT uuid,password FROM users WHERE username =? COLLATE NOCASE",
+                        (username,))
+            records = cur.fetchall()
             if len(records) == 0:
+
                 return {"status": "nouser"}
 
             else:
-                username = records[0][0]
-                cur.execute("SELECT uuid FROM users WHERE username =? COLLATE NOCASE AND password=?",
-                            (username, hashlib.md5(password.encode()).hexdigest()))
-                records = cur.fetchall()
-                if len(records) == 0:
-                    return {"status": "badpasswd"}
+                uid = records[0][0]
+                passwd = records[0][1]
 
+                if crypto.decrypt(passwd) == password:
+                    try:
+                        ret = users[username].getkey()
+
+                    except KeyError:
+                        users[username] = Users(username, uid)
+                        ret = users[username].getkey()
+                    print(ret)
+                    return {"status": "success", "key": ret, "uname": username}
                 else:
-                    uid = records[0][0]
-            try:
-                ret = users[username].getkey()
-
-            except KeyError:
-                users[username] = Users(username, uid)
-                ret = users[username].getkey()
-
-                print(ret)
-                return {"status": "success", "key": ret, "uname": username}
+                    return {"status": "badpasswd"}
 
     except KeyError:
         key = data["key"]
 
-    try:
-        if key and users[username].getkey() == key:
-            un = users[username]
-            uid = users[username].getid()
-            del un
-            users[username] = Users(username, uid)
-            new_key = users[username].getkey()
-            return {"status": "success", "key": new_key}
-    except KeyError:
-        return {"status": "incorrect"}
+        try:
+            if key and users[username].getkey() == key:
+                uid = users[username].getid()
+                users[username] = Users(username, uid)
+                new_key = users[username].getkey()
+                return {"status": "success", "key": new_key}
+        except KeyError:
+            return {"status": "incorrect"}
 
 
 def send_msg(fromu, tou, msg):
@@ -281,14 +290,15 @@ def send_msg(fromu, tou, msg):
     if fromu in usr and tou in usr:
         try:
             user1, user2 = sortedstring(fromu.lower(), tou.lower())
-            with sqlite3.connect("chat.db") as conn:
-                cur = conn.cursor()
-                cur.execute(
-                    f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,fromuser TEXT,date TEXT)")
-                conn.commit()
-                cur.execute(f"INSERT INTO {user1 + user2} (message,fromuser) VALUES (?,?)", (msg, fromu))
-                conn.commit()
-                return {"status": "success"}
+            conn = sqlite3.connect(database="chat.db")
+            cur = conn.cursor()
+            cur.execute(
+                f"CREATE TABLE IF NOT EXISTS {user1 + user2} (id INTEGER PRIMARY KEY,message TEXT,fromuser TEXT,date TEXT)")
+            conn.commit()
+            cur.execute(f"INSERT INTO {user1 + user2} (message,fromuser) VALUES (?,?)", (msg, fromu))
+            conn.commit()
+
+            return {"status": "success"}
         except Exception as e:
             print(repr(e))
     else:
@@ -301,14 +311,14 @@ def getmsg(user1, user2, key):
         if user1 in usr and user2 in usr:
             try:
                 user1, user2 = sortedstring(user1.lower(), user2.lower())
-                with sqlite3.connect("chat.db") as conn:
+                with sqlite3.connect(database="chat.db") as conn:
                     cur = conn.cursor()
                     cur.execute(f"SELECT message,fromuser FROM {user1 + user2}")
                     res = cur.fetchall()
-                r1 = [res[i][0] for i in range(len(res))]
-                r2 = [res[i][1] for i in range(len(res))]
-                r = {"messages": r1, "user": r2}
-                return r
+                    r1 = [res[i][0] for i in range(len(res))]
+                    r2 = [res[i][1] for i in range(len(res))]
+                    r = {"messages": r1, "user": r2}
+                    return r
 
             except Exception as e:
                 print(repr(e))
@@ -328,12 +338,13 @@ def sortedstring(a, b):
 
 
 def fetchusers():
-    with sqlite3.connect("chat.db") as conn:
+    with sqlite3.connect(database="chat.db") as conn:
         cur = conn.cursor()
         cur.execute("SELECT username FROM users")
         res = cur.fetchall()
-    res = [res[i][0] for i in range(len(res))]
-    return res
+
+        res = [res[i][0] for i in range(len(res))]
+        return res
 
 
 if __name__ == "__main__":
