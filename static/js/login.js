@@ -12,16 +12,20 @@ $(document).ready(function () {
         var uname = localStorage.getItem("uname");
 
         if (key.length) {
+            msg_data = {"subject":"login","uname":uname,"key":key}
 
-            $.post("/", {
-                all_data: `{"subject":"login","uname":"${uname}","key":"${key}"}`,
+            $.ajax({
+                type: 'POST',
+                url: "/",
+                data: JSON.stringify(msg_data),
                 contentType: "application/json",
-                dataType: 'json'
-            }, function (err, req, resp) {
+                dataType: 'json',
+                success: function (err, req, resp) {
                 msg = JSON.parse(resp["responseText"]);
                 if (msg["status"] == "success") {
                     localStorage.setItem("key", msg["key"]);
                     send_form("/interface", { "key": msg["key"], "uname": uname });
+                }
                 }
             });
         }
