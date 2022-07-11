@@ -1,5 +1,4 @@
 import datetime
-import hashlib
 import os.path
 import re
 import sqlite3
@@ -10,10 +9,13 @@ from User import Users
 from crypt import AESCipher
 
 if os.path.exists("key"):
-    key = open("key", "r").read()
+    with open("key", "r") as file:
+        key = file.read()
 else:
     key = secrets.token_hex(64)
-    open("key", 'w').write(key)
+    with open("key", "w") as file:
+        file.write(key)
+
 crypto = AESCipher(key)
 
 app = flask.Flask(__name__)
@@ -25,8 +27,8 @@ with sqlite3.connect(database="chat.db") as conn:
     now = datetime.datetime.now()
     try:
         cur.execute(
-            "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, username TEXT NOT NULL "
-            "UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
+            "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, username TEXT NOT "
+            "NULL UNIQUE, password TEXT NOT NULL,uuid TEXT NOT NULL UNIQUE, registration_date TEXT)")
         cur.execute("INSERT INTO users (email, username, password, uuid, registration_date) VALUES (?, ?, ?, ?, ?)",
                     ("root@root.com", "root", crypto.encrypt("root"), 77777777, now))
         conn.commit()
@@ -267,14 +269,12 @@ def loginuser(data):
                     except KeyError:
                         users[username] = Users(username, uid)
                         ret = users[username].getkey()
-                    print(ret)
                     return {"status": "success", "key": ret, "uname": username}
                 else:
                     return {"status": "badpasswd"}
 
     except KeyError:
         key = data["key"]
-
         try:
             if key and users[username].getkey() == key:
                 uid = users[username].getid()

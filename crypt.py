@@ -30,9 +30,3 @@ class AESCipher(object):
         return s[:-ord(s[len(s) - 1:])]
 
 
-if __name__ == "__main__":
-    c = AESCipher(key="mykey")
-
-    a = input("Enter:")
-    d = c.decrypt("")
-    print(d)
