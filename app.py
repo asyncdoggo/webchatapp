@@ -207,7 +207,7 @@ def resetpass(uname, oldpass, newpass):
 def registeruser(data):
     email = data["email"]
     username = data["uname"]
-    password = data["passwd1"]
+    password = data["passwd"]
 
     if (5 > len(username) < 13) or " " in username:
         return {"status": "Username should be between 5 to 13 characters without spaces"}
